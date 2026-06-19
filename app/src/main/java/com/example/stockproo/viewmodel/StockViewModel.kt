@@ -1,42 +1,72 @@
-package com.example.stockproo.viewmodel
+package com.example.stockproo.ui.navigation
 
-class StockViewModel {
-}package com.example.stockproo.viewmodel
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.stockproo.ui.screens.*
+import com.example.stockproo.viewmodel.StockViewModel
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.lifecycle.ViewModel
-import com.example.stockpro.model.Producto
+@Composable
+fun StockNavigation() {
+    val navController = rememberNavController()
+    val stockViewModel: StockViewModel = viewModel()
 
-class StockViewModel : ViewModel() {
+    NavHost(navController = navController, startDestination = "login") {
 
-    // Lista reactiva con 6 productos iniciales precargados
-    val listaProductos = mutableStateListOf(
-        Producto(1, "Martillo Pro", "Martillo de acero templado de 16oz", 12.50, 10),
-        Producto(2, "Destornillador Phillips", "Destornillador imantado estrella", 4.20, 3),
-        Producto(3, "Taladro Inalámbrico", "Taladro percutor de 20V con 2 baterías", 89.99, 6),
-        Producto(4, "Cinta Métrica 5m", "Cinta de alta resistencia con seguro", 5.50, 2),
-        Producto(5, "Juego de Llaves", "Set de 12 llaves fijas combinadas", 24.00, 12),
-        Producto(6, "Organizador de Tornillos", "Caja plástica con 20 compartimentos", 8.00, 0)
-    )
-
-    fun obtenerProducto(id: Int): Producto? {
-        return listaProductos.find { it.id == id }
-    }
-
-    fun actualizarStock(id: Int, nuevaCantidad: Int) {
-        val index = listaProductos.indexOfFirst { it.id == id }
-        if (index != -1 && nuevaCantidad >= 0) {
-            // Actualizamos creando una copia o modificando el estado reactivo
-            listaProductos[index] = listaProductos[index].copy(stockActual = nuevaCantidad)
+        // Pantalla 1: Ingreso de Operario
+        composable("login") {
+            LoginScreen(
+                onNavigateToCatalogo = { nombre ->
+                    navController.navigate("catalogo/$nombre")
+                }
+            )
         }
-    }
 
-    // Lógica financiera calculada en el ViewModel
-    fun calcularValorTotalInventario(): Double {
-        return listaProductos.sumOf { it.precio * it.stockActual }
-    }
+        // Pantalla 2: Catálogo de Inventario
+        composable(
+            route = "catalogo/{operario}",
+            arguments = listOf(navArgument("operario") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val operario = backStackEntry.arguments?.getString("operario") ?: "Desconocido"
+            CatalogoScreen(
+                operario = operario,
+                viewModel = stockViewModel,
+                onNavigateToEdicion = { id ->
+                    navController.navigate("edicion/$id")
+                },
+                onNavigateToReporte = {
+                    navController.navigate("reporte")
+                }
+            )
+        }
 
-    fun obtenerProductosEnCero(): Int {
-        return listaProductos.count { it.stockActual == 0 }
+        // Pantalla 3: Edición de Stock
+        composable(
+            route = "edicion/{productoId}",
+            arguments = listOf(navArgument("productoId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val productoId = backStackEntry.arguments?.getInt("productoId") ?: 0
+            EdicionScreen(
+                productoId = productoId,
+                viewModel = stockViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Pantalla 4: Reporte Financiero
+        composable("reporte") {
+            ReporteScreen(
+                viewModel = stockViewModel,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
