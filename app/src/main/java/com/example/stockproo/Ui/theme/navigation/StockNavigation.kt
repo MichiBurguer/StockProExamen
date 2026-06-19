@@ -1,4 +1,4 @@
-package com.example.stockproo.Ui.navigation
+package com.example.stockproo.Ui.theme.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
